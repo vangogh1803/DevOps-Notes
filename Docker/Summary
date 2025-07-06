@@ -1,0 +1,188 @@
+# Docker Study Guide
+
+## Introduction
+This guide reinforces core Docker concepts drawn from the course material. It moves from fundamentals and daily commands to workflow integration, data persistence, and beyond.
+
+---
+
+## I. Core Concepts
+
+### A. What is Docker?
+- **Definition:** Docker packages an application and all its dependencies into a lightweight, portable unit called a **container**.  
+- **Problem Solved:** Eliminates “it works on my machine” issues, simplifies setup, and streamlines deployment.
+
+### B. Containers vs. Virtual Machines
+|          | Virtual Machine | Docker Container |
+|----------|-----------------|------------------|
+| **Scope** | Entire OS incl. its own kernel | Application layer only (shares host kernel) |
+| **Size**  | GB‑scale       | MB‑scale |
+| **Boot time** | Slower      | Near‑instant |
+| **Structure** | Hardware → Host OS → Hypervisor → *Guest OS* → Apps | Hardware → Host OS (shared kernel) → Docker Engine → Apps |
+
+### C. Container Anatomy
+- **Image:** Read‑only template containing app + dependencies.  
+- **Container:** A *running* instance of an image.  
+- **Layers:** Stacked, read‑only filesystem layers enabling storage efficiency & faster pulls.  
+- **Container Repos:**  
+  - **Docker Hub** (public)  
+  - **Private registries** (e.g., AWS ECR) for proprietary images
+
+---
+
+## II. Practical Docker Usage
+
+### A. Installation (high level)
+- **Mac / Windows:** Download installer; includes Engine, CLI, Compose.  
+- **Linux:** Add Docker CE repo, then install packages.  
+- **Older Win/Mac:** Use **Docker Toolbox** (runs a small Linux VM).
+
+### B. Essential Commands
+docker pull <image>:<tag>             # Download image
+docker run <image>:<tag>              # Start container (pull if needed)
+  -d                                  #  …in background
+  -p <host_port>:<container_port>     #  …with port binding
+  --name <name>                       #  …with custom name
+  -e KEY=value                        #  …with env var
+docker ps                             # List running containers
+docker ps -a                          # List *all* containers
+docker stop <id|name>                 # Stop container
+docker start <id|name>                # Restart stopped container
+docker rm <id|name>                   # Remove stopped container
+docker images                         # List local images
+docker rmi <image>                    # Remove image
+docker logs <id|name>                 # View logs
+docker exec -it <id|name> bash        # Interactive shell
+
+---
+III. Docker in the Development Workflow
+A. Local Development
+Before Docker: manual installs & drift.
+With Docker: docker run mongo etc.—consistent environment; containers in the same Docker network talk via service names.
+
+B. Docker Compose (multi‑container)
+compose.yml declares services, images, ports, env vars, volumes.
+docker-compose up — spin up everything (+ network).
+docker-compose down — tear it all down.
+
+C. Dockerfile (custom images)
+dockerfile
+Copy
+Edit
+# Example
+FROM node:18-alpine
+ENV NODE_ENV=production
+WORKDIR /app
+COPY . .
+RUN npm ci --omit=dev
+CMD ["node", "index.js"]
+Build & tag:
+
+```bash
+Copy
+Edit
+docker build -t myapp:1.0 .
+
+D. Pushing to a Private Registry
+bash
+Copy
+Edit
+aws ecr get-login-password | docker login ...
+docker tag myapp:1.0 123456789.dkr.ecr.us-east-1.amazonaws.com/myapp:1.0
+docker push 123456789.dkr.ecr.us-east-1.amazonaws.com/myapp:1.0
+E. Deployment via Compose
+On the server: pull images (if private, login first) and run docker-compose up -d.
+
+IV. Data Persistence with Volumes
+Type	How to declare	Where stored
+Host volume	-v /host/path:/container/path	Given host path
+Anonymous	-v /container/path	Docker‑managed anon dir
+Named	-v mydata:/container/path (preferred)	Docker‑managed, easy to reference
+
+Define named volumes near the bottom of docker-compose.yml:
+
+yaml
+Copy
+Edit
+services:
+  db:
+    image: postgres:16
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
+V. Advanced & Next Steps
+Container orchestration: Kubernetes, Swarm, Nomad, etc.
+
+Explore CI/CD pipelines, image scanning, multi‑arch builds.
+
+
+
+Quiz — Docker Fundamentals
+Problem solved by Docker
+
+Key OS difference vs. VM
+
+Image ↔ Container relationship
+
+Why layered images?
+
+Purpose of -p host:container
+
+How Compose simplifies multi‑service apps
+
+Role of a Dockerfile
+
+Why container FS is ephemeral
+
+What volumes are & why they help
+
+When push to a private repo?
+
+Answer Key:-
+Eliminates environment inconsistency; simplifies setup & deployment.
+
+VM includes its own kernel; container shares host kernel.
+
+Image = blueprint (read‑only); container = running instance.
+
+Layers enable storage efficiency & quicker pulls via caching.
+
+Exposes container port to host, letting outside traffic in.
+
+Single YAML → one command (up) vs. many docker runs.
+
+Text recipe for building an image; each line = new layer.
+
+Container restarts from image state; changes vanish unless persisted.
+
+Volumes mount host storage → data survives container lifecycle.
+
+Proprietary code, sensitive data, or internal‑only deployments.
+
+</details>
+Essay Prompts
+Contrast multi‑service dev/deploy before vs. with Docker.
+Explain image layering and its efficiency benefits.
+Walk through a Node.js + MongoDB dev setup using Docker & persistence.
+Discuss how Dockerfile + Compose abstract complexity in deployment.
+Advise a team on Docker benefits & challenges (compatibility, data, etc.).
+
+
+
+Glossary (selected)
+Application Layer: Where apps live; Docker virtualizes this layer.
+
+Container: Runnable, isolated instance of an image.
+
+Docker Engine: Core daemon + REST API + CLI.
+
+Docker Compose: YAML‑driven multi‑container orchestrator.
+
+Dockerfile: Instruction file for building images (one layer per line).
+
+Named Volume: Host‑managed storage with human‑readable name.
+
+Port Binding: Map host port → container port (-p).
+
+Tag: Version label on an image (:latest, :1.0, etc.).
